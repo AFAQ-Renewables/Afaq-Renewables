@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFAQ Renewables - Executive Solar Sales Cockpit</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -34,11 +33,9 @@
             }
         }
     </script>
-    <!-- Inter Font & FontAwesome for Premium Feel -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Stable Production Core Framework CDNs (Pinned Babel version prevents script compilation crashes) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7.15.0/babel.min.js" crossorigin></script>
@@ -76,11 +73,9 @@
 </head>
 <body class="bg-solar-bgMain text-solar-textDark min-h-full flex flex-col antialiased">
 
-    <!-- Target mounting point for our React Application -->
     <div id="root" class="min-h-screen lg:h-screen flex flex-col"></div>
 
-    <!-- React Application Implementation -->
-    <script type="text/babel" data-id="dynamic-kpi-engine-v3">
+    <script type="text/babel" data-id="dynamic-kpi-engine-v4">
         const { useState, useEffect, useMemo } = React;
 
         // =========================================================================
@@ -242,7 +237,7 @@
                 });
             }, [projects, searchQuery, statusFilter, yearFilter]);
 
-            // 2. RUNTIME DYNAMIC METRICS COMPUTE LAYER (Bound explicitly to the filteredProjects array)
+            // 2. RUNTIME DYNAMIC METRICS COMPUTE LAYER (Tied explicitly to the changing filtered list)
             const metrics = useMemo(() => {
                 let totalPipeline = 0; let totalBilled = 0; let totalCollected = 0;
                 let totalProfit = 0; let totalAfaq = 0; let totalJubilee = 0;
@@ -555,7 +550,7 @@
                                             onClick={() => setYearFilter(year)}
                                             className={`flex-1 text-center py-1.5 rounded-lg text-xs transition-all border ${
                                                 yearFilter === year 
-                                                    ? 'bg-sky-50 text-solar-primary border border-sky-300 font-semibold shadow-sm' 
+                                                    ? 'bg-sky-50 text-solar-primary border-sky-300 font-semibold shadow-sm' 
                                                     : 'bg-solar-bgMain border-solar-border text-solar-textMuted hover:bg-slate-50'
                                             }`}
                                         >
@@ -599,7 +594,7 @@
                                 <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales Pipeline</span>
-                                        <div className="bg-sky-50 p-2 rounded-xl text-solar-primary border border-sky-100 flex items-center justify-center w-8 h-8">
+                                        <div className="bg-sky-50 p-2 rounded-xl text-solar-primary border border-sky-100 w-8 h-8 flex items-center justify-center">
                                             <i className="fa-solid fa-chart-line text-xs"></i>
                                         </div>
                                     </div>
@@ -620,7 +615,7 @@
                                 <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Invoiced Volume</span>
-                                        <div className="bg-blue-50 p-2 rounded-xl text-solar-blue border border-blue-100 flex items-center justify-center w-8 h-8">
+                                        <div className="bg-blue-50 p-2 rounded-xl text-solar-blue border border-blue-100 w-8 h-8 flex items-center justify-center">
                                             <i className="fa-solid fa-file-invoice-dollar text-xs"></i>
                                         </div>
                                     </div>
@@ -646,7 +641,7 @@
                                 <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cash Collected</span>
-                                        <div className="bg-emerald-50 p-2 rounded-xl text-solar-accentGreen border border-emerald-100 flex items-center justify-center w-8 h-8">
+                                        <div className="bg-emerald-50 p-2 rounded-xl text-solar-accentGreen border border-emerald-100 w-8 h-8 flex items-center justify-center">
                                             <i className="fa-solid fa-vault text-xs"></i>
                                         </div>
                                     </div>
@@ -672,7 +667,7 @@
                                 <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Net Margin Returns</span>
-                                        <div className="bg-purple-50 p-2 rounded-xl text-solar-accentPurple border border-purple-100 flex items-center justify-center w-8 h-8">
+                                        <div className="bg-purple-50 p-2 rounded-xl text-solar-accentPurple border border-purple-100 w-8 h-8 flex items-center justify-center">
                                             <i className="fa-solid fa-hand-holding-dollar text-xs"></i>
                                         </div>
                                     </div>
