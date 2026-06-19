@@ -75,16 +75,15 @@
 
     <div id="root" class="min-h-screen lg:h-screen flex flex-col"></div>
 
-    <script type="text/babel" data-version="3.0-verified-dynamic-kpis">
+    <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
         // =========================================================================
-        // PLACE YOUR CLOUD DATABASE PARAMETERS HERE FOR REAL-TIME TEAM SYNCING
+        // REAL-TIME TEAM CLOUD SYNC PARAMETERS
         // =========================================================================
         const SUPABASE_URL = "https://ygzejawnhswhumwbitob.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_2ANSi_Ikn_ilWy-PSoKG6Q_0qH1udEc";
 
-        // Smart protection boundary check
         const isCloudConfigured = SUPABASE_URL && !SUPABASE_URL.includes("PLACE_YOUR_");
         const supabase = isCloudConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -222,22 +221,22 @@
                 }
             };
 
-            // 1. SANITIZED INTERACTIVE FILTER ENGINE
+            // 1. STABLE DEFENSIVE WORKSPACE FILTERING ENGINE
             const filteredProjects = useMemo(() => {
                 return projects.filter(p => {
                     const customerStr = String(p.customer || '').toLowerCase();
                     const descStr = String(p.desc || '').toLowerCase();
                     const orderNoStr = String(p.orderNo || '').toLowerCase();
-                    const searchTarget = String(searchQuery || '').toLowerCase();
+                    const searchTarget = searchQuery.toLowerCase();
 
                     const matchesSearch = customerStr.includes(searchTarget) || descStr.includes(searchTarget) || orderNoStr.includes(searchTarget);
-                    const matchesStatus = statusFilter === 'All' || String(p.status) === statusFilter;
+                    const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
                     const matchesYear = yearFilter === 'All' || String(p.year) === yearFilter;
                     return matchesSearch && matchesStatus && matchesYear;
                 });
             }, [projects, searchQuery, statusFilter, yearFilter]);
 
-            // 2. RUNTIME DYNAMIC METRICS COMPUTE LAYER (Tied explicitly to the changing filtered list)
+            // 2. DYNAMIC METRICS RE-CALCULATION LAYER (Now running perfectly over filtered scope!)
             const metrics = useMemo(() => {
                 let totalPipeline = 0; let totalBilled = 0; let totalCollected = 0;
                 let totalProfit = 0; let totalAfaq = 0; let totalJubilee = 0;
@@ -263,7 +262,7 @@
             const customerGroupData = useMemo(() => {
                 const groups = {};
                 filteredProjects.forEach(p => {
-                    const name = String(p.customer || 'Unknown Client');
+                    const name = p.customer || 'Unknown Client';
                     groups[name] = (groups[name] || 0) + Number(p.value || 0);
                 });
                 return Object.entries(groups).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val).slice(0, 5);
@@ -402,11 +401,12 @@
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `AFAQ_Solar_Sales_Master_Filtered.csv`);
+                link.setAttribute("download", `AFAQ_Solar_Sales_Filtered_${new Date().toISOString().split('T')[0]}.csv`);
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showToast("CSV file for the active filtered selection prepared and downloaded.");
             };
 
-            const formatCurrency = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val || 0));
+            const formatCurrency = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 
             return (
                 <div className="flex-1 flex flex-col lg:h-full lg:overflow-hidden bg-solar-bgMain">
@@ -428,9 +428,9 @@
                                         {isAdmin ? 'Admin Console Active' : 'Read-Only View'}
                                     </span>
 
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2 self-center transition-colors bg-sky-50 text-solar-primary border-sky-200`}>
-                                        <i className="fa-solid fa-cloud-sun mr-1"></i>
-                                        Live Workspace Recalculator
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2 self-center transition-colors bg-sky-50 text-solar-primary border-sky-200">
+                                        <i className="fa-solid fa-cloud mr-1"></i>
+                                        LIVE WORKSPACE RECALCULATOR
                                     </span>
                                 </div>
                                 <p className="text-xs text-solar-textMuted font-medium tracking-wide">Jubilee Bros Joint Sales & Procurement Pipeline</p>
@@ -439,7 +439,7 @@
 
                         <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3 w-full md:w-auto">
                             <button 
-                                onClick={() => isAdmin ? (setIsAdmin(false), showToast("Platform locked.")) : setIsAuthModalOpen(true)}
+                                onClick={() => isAdmin ? (setIsAdmin(false), showToast("Platform locked. Returned safely to View Mode.", "warning")) : setIsAuthModalOpen(true)}
                                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 flex-1 sm:flex-initial justify-center shadow-sm ${
                                     isAdmin ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100' : 'bg-sky-50 border-sky-200 text-solar-primary hover:bg-sky-100'
                                 }`}
@@ -489,7 +489,7 @@
                     </div>
 
                     <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden min-h-0">
-                        <aside className={`w-full lg:w-80 bg-solar-cardBg p-5 border-b lg:border-b-0 lg:border-r border-solar-border flex flex-col gap-5 shrink-0 ${showMobileFilters ? 'block' : 'hidden lg:flex'} lg:overflow-y-auto`}>
+                        <aside className="w-full lg:w-80 bg-solar-cardBg p-5 border-b lg:border-b-0 lg:border-r border-solar-border flex flex-col gap-5 shrink-0 lg:flex lg:overflow-y-auto">
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark mb-1">Interactive Filters</h3>
                                 <p className="text-[11px] text-solar-textMuted">Slice distribution volumes by statuses, timelines, and customer tags.</p>
@@ -507,7 +507,7 @@
                                     />
                                     <i className="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                                     {searchQuery && (
-                                        <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2 text-slate-400 text-xs">
+                                        <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2 text-slate-400 hover:text-solar-textDark text-xs">
                                             <i className="fa-solid fa-xmark"></i>
                                         </button>
                                     )}
@@ -556,32 +556,48 @@
                             </div>
 
                             <div className="mt-2 lg:mt-auto pt-4 border-t border-solar-border bg-solar-bgMain/60 p-3.5 rounded-xl border border-dashed border-slate-200">
-                                <h4 className="text-[10px] font-bold uppercase text-solar-primary mb-2 tracking-wider flex items-center gap-1"><i className="fa-solid fa-handshake"></i> Partnership Dynamics</h4>
+                                <h4 className="text-[10px] font-bold uppercase text-solar-primary mb-2 tracking-wider flex items-center gap-1">
+                                    <i className="fa-solid fa-handshake"></i> Partnership Dynamics
+                                </h4>
                                 <div className="flex justify-between text-[10px] text-solar-textMuted mb-1.5">
                                     <span>AFAQ Profit Share</span>
                                     <span className="text-solar-textDark font-bold">{metrics.totalProfit > 0 ? ((metrics.totalAfaq / metrics.totalProfit) * 100).toFixed(1) : 0}%</span>
                                 </div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mb-3 flex">
-                                    <div style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalAfaq / metrics.totalProfit) * 100 : 0}%` }} className="bg-solar-primary h-full"></div>
-                                    <div style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalJubilee / metrics.totalProfit) * 100 : 0}%` }} className="bg-solar-accentGreen h-full"></div>
+                                    <div 
+                                        style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalAfaq / metrics.totalProfit) * 100 : 0}%` }} 
+                                        className="bg-solar-primary h-full"
+                                    ></div>
+                                    <div 
+                                        style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalJubilee / metrics.totalProfit) * 100 : 0}%` }} 
+                                        className="bg-solar-accentGreen h-full"
+                                    ></div>
                                 </div>
                                 <div className="flex items-center gap-2 justify-between text-[10px] font-medium">
-                                    <span className="flex items-center gap-1.5 text-solar-textMuted"><span className="w-1.5 h-1.5 rounded-full bg-solar-primary"></span> AFAQ</span>
-                                    <span className="flex items-center gap-1.5 text-solar-textMuted"><span className="w-1.5 h-1.5 rounded-full bg-solar-accentGreen"></span> Jubilee Bros</span>
+                                    <span className="flex items-center gap-1.5 text-solar-textMuted">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-solar-primary"></span> AFAQ
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-solar-textMuted">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-solar-accentGreen"></span> Jubilee Bros
+                                    </span>
                                 </div>
                             </div>
                         </aside>
 
                         <main className="flex-1 p-4 sm:p-5 flex flex-col gap-5 overflow-y-visible lg:overflow-y-auto min-h-0">
                             <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 shrink-0">
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales Pipeline</span>
-                                        <div className="bg-sky-50 p-2 rounded-xl text-solar-primary border border-sky-100 w-8 h-8 flex items-center justify-center"><i className="fa-solid fa-chart-line text-xs"></i></div>
+                                        <div className="bg-sky-50 p-2 rounded-xl text-solar-primary border border-sky-100 w-8 h-8 flex items-center justify-center">
+                                            <i className="fa-solid fa-chart-line text-xs"></i>
+                                        </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">{formatCurrency(metrics.totalPipeline)}</span>
+                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                                                {formatCurrency(metrics.totalPipeline)}
+                                            </span>
                                             <span className="text-[11px] font-bold text-solar-primary ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
@@ -591,14 +607,18 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Invoiced Volume</span>
-                                        <div className="bg-blue-50 p-2 rounded-xl text-solar-blue border border-blue-100 w-8 h-8 flex items-center justify-center"><i className="fa-solid fa-file-invoice-dollar text-xs"></i></div>
+                                        <div className="bg-blue-50 p-2 rounded-xl text-solar-blue border border-blue-100 w-8 h-8 flex items-center justify-center">
+                                            <i className="fa-solid fa-file-invoice-dollar text-xs"></i>
+                                        </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">{formatCurrency(metrics.totalBilled)}</span>
+                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                                                {formatCurrency(metrics.totalBilled)}
+                                            </span>
                                             <span className="text-[11px] font-bold text-solar-blue ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 flex flex-col gap-1">
@@ -613,14 +633,18 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cash Collected</span>
-                                        <div className="bg-emerald-50 p-2 rounded-xl text-solar-accentGreen border border-emerald-100 w-8 h-8 flex items-center justify-center"><i className="fa-solid fa-vault text-xs"></i></div>
+                                        <div className="bg-emerald-50 p-2 rounded-xl text-solar-accentGreen border border-emerald-100 w-8 h-8 flex items-center justify-center">
+                                            <i className="fa-solid fa-vault text-xs"></i>
+                                        </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">{formatCurrency(metrics.totalCollected)}</span>
+                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                                                {formatCurrency(metrics.totalCollected)}
+                                            </span>
                                             <span className="text-[11px] font-bold text-solar-accentGreen ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 flex flex-col gap-1">
@@ -635,14 +659,18 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Net Margin Returns</span>
-                                        <div className="bg-purple-50 p-2 rounded-xl text-solar-accentPurple border border-purple-100 w-8 h-8 flex items-center justify-center"><i className="fa-solid fa-hand-holding-dollar text-xs"></i></div>
+                                        <div className="bg-purple-50 p-2 rounded-xl text-solar-accentPurple border border-purple-100 w-8 h-8 flex items-center justify-center">
+                                            <i className="fa-solid fa-hand-holding-dollar text-xs"></i>
+                                        </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">{formatCurrency(metrics.totalProfit)}</span>
+                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                                                {formatCurrency(metrics.totalProfit)}
+                                            </span>
                                             <span className="text-[11px] font-bold text-solar-accentPurple ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-[11px] font-semibold text-solar-accentPurple">
@@ -656,20 +684,26 @@
                             {metrics.outstandingReceivables > 0 && (
                                 <section className="bg-amber-50/70 border border-amber-200 p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
                                     <div className="flex items-start sm:items-center gap-3">
-                                        <div className="bg-amber-100 p-2 rounded-lg text-solar-accentAmber shrink-0"><i className="fa-solid fa-circle-info text-sm"></i></div>
+                                        <div className="bg-amber-100 p-2 rounded-lg text-solar-accentAmber shrink-0">
+                                            <i className="fa-solid fa-circle-info text-sm"></i>
+                                        </div>
                                         <div>
                                             <h4 className="text-xs font-bold text-amber-900">Outstanding Working Capital Receivables Gap Detected</h4>
                                             <p className="text-[11px] text-amber-800">Total remaining balance to collect: <strong className="font-bold">{formatCurrency(metrics.outstandingReceivables)} SAR</strong>. These values track closely with supply agreements held against promissory notes.</p>
                                         </div>
                                     </div>
-                                    <div className="text-[10px] bg-amber-100 px-3 py-1.5 rounded-lg text-amber-900 border border-amber-200 font-bold shrink-0 w-full sm:w-auto text-center">Liquidity Exposure: {((metrics.outstandingReceivables / metrics.totalPipeline) * 100).toFixed(1)}%</div>
+                                    <div className="text-[10px] bg-amber-100 px-3 py-1.5 rounded-lg text-amber-900 border border-amber-200 font-bold shrink-0 w-full sm:w-auto text-center">
+                                        Liquidity Exposure: {((metrics.outstandingReceivables / metrics.totalPipeline) * 100).toFixed(1)}%
+                                    </div>
                                 </section>
                             )}
 
                             <section className="grid grid-cols-1 xl:grid-cols-5 gap-5 shrink-0">
                                 <div className="bg-solar-cardBg p-5 rounded-xl border border-solar-border xl:col-span-3 flex flex-col justify-between shadow-sm">
                                     <div className="mb-4">
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5"><i className="fa-solid fa-building text-solar-primary"></i> Top Customers by Contract Volume</h3>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5">
+                                            <i className="fa-solid fa-building text-solar-primary"></i> Top Customers by Contract Volume
+                                        </h3>
                                         <p className="text-[11px] text-solar-textMuted mt-0.5">Top purchasing and procurement entities across KSA hubs</p>
                                     </div>
 
@@ -679,24 +713,26 @@
                                             return (
                                                 <div key={idx} className="flex flex-col gap-1.5 text-xs">
                                                     <div className="flex justify-between items-center text-[11px] gap-4">
-                                                        <span className="font-bold text-solar-textDark truncate max-w-[240px]">{client.name}</span>
+                                                        <span className="font-bold text-solar-textDark truncate max-w-[160px] sm:max-w-[240px]">{client.name}</span>
                                                         <span className="font-mono text-solar-primary font-bold whitespace-nowrap">{formatCurrency(client.val)} SAR</span>
                                                     </div>
                                                     <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative border border-slate-200/50">
-                                                        <div style={{ width: `${percent}%` }} className="bg-gradient-to-r from-solar-primary to-sky-400 h-full rounded-full transition-all duration-700"></div>
+                                                        <div 
+                                                            style={{ width: `${percent}%` }} 
+                                                            className="bg-gradient-to-r from-solar-primary to-sky-400 h-full rounded-full transition-all duration-700"
+                                                        ></div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
-                                        {customerGroupData.length === 0 && (
-                                            <p className="text-center text-solar-textMuted text-[11px] py-12">No client orders recorded matching filters.</p>
-                                        )}
                                     </div>
                                 </div>
 
                                 <div className="bg-solar-cardBg p-5 rounded-xl border border-solar-border xl:col-span-2 flex flex-col shadow-sm">
                                     <div className="mb-4">
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5"><i className="fa-solid fa-chart-pie text-solar-primary"></i> Net Profit Allocation</h3>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5">
+                                            <i className="fa-solid fa-chart-pie text-solar-primary"></i> Net Profit Allocation
+                                        </h3>
                                         <p className="text-[11px] text-solar-textMuted mt-0.5">Distribution shares of the total margin yield</p>
                                     </div>
 
@@ -706,8 +742,26 @@
                                                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F1F5F9" strokeWidth="3"></circle>
                                                 {metrics.totalProfit > 0 && (
                                                     <React.Fragment>
-                                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#0284C7" strokeWidth="3.5" strokeDasharray={`${(metrics.totalAfaq / metrics.totalProfit) * 100} ${100 - ((metrics.totalAfaq / metrics.totalProfit) * 100)}`} strokeDashoffset="0"></circle>
-                                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10B981" strokeWidth="3.5" strokeDasharray={`${(metrics.totalJubilee / metrics.totalProfit) * 100} ${100 - ((metrics.totalJubilee / metrics.totalProfit) * 100)}`} strokeDashoffset={-((metrics.totalAfaq / metrics.totalProfit) * 100)}></circle>
+                                                        <circle 
+                                                            cx="18" 
+                                                            cy="18" 
+                                                            r="15.915" 
+                                                            fill="none" 
+                                                            stroke="#0284C7" 
+                                                            strokeWidth="3.5" 
+                                                            strokeDasharray={`${(metrics.totalAfaq / metrics.totalProfit) * 100} ${100 - ((metrics.totalAfaq / metrics.totalProfit) * 100)}`}
+                                                            strokeDashoffset="0"
+                                                        ></circle>
+                                                        <circle 
+                                                            cx="18" 
+                                                            cy="18" 
+                                                            r="15.915" 
+                                                            fill="none" 
+                                                            stroke="#10B981" 
+                                                            strokeWidth="3.5" 
+                                                            strokeDasharray={`${(metrics.totalJubilee / metrics.totalProfit) * 100} ${100 - ((metrics.totalJubilee / metrics.totalProfit) * 100)}`}
+                                                            strokeDashoffset={-((metrics.totalAfaq / metrics.totalProfit) * 100)}
+                                                        ></circle>
                                                     </React.Fragment>
                                                 )}
                                             </svg>
@@ -719,11 +773,15 @@
 
                                         <div className="flex flex-col gap-2.5 text-[11px] w-full">
                                             <div className="bg-slate-50 p-2 rounded-lg border border-solar-border">
-                                                <div className="flex items-center gap-1.5 text-solar-primary font-bold uppercase text-[10px]"><span className="w-2 h-2 rounded-full bg-solar-primary"></span> AFAQ Share</div>
+                                                <div className="flex items-center gap-1.5 text-solar-primary font-bold uppercase text-[10px]">
+                                                    <span className="w-2 h-2 rounded-full bg-solar-primary"></span> AFAQ Share
+                                                </div>
                                                 <p className="text-solar-textDark font-bold mt-0.5">{formatCurrency(metrics.totalAfaq)} SAR</p>
                                             </div>
                                             <div className="bg-slate-50 p-2 rounded-lg border border-solar-border">
-                                                <div className="flex items-center gap-1.5 text-solar-accentGreen font-bold uppercase text-[10px]"><span className="w-2 h-2 rounded-full bg-solar-accentGreen"></span> Jubilee Bros</div>
+                                                <div className="flex items-center gap-1.5 text-solar-accentGreen font-bold uppercase text-[10px]">
+                                                    <span className="w-2 h-2 rounded-full bg-solar-accentGreen"></span> Jubilee Bros
+                                                </div>
                                                 <p className="text-solar-textDark font-bold mt-0.5">{formatCurrency(metrics.totalJubilee)} SAR</p>
                                             </div>
                                         </div>
@@ -735,12 +793,17 @@
                                 <div className="px-4 sm:px-6 py-4 border-b border-solar-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
                                     <div>
                                         <h3 className="text-sm font-bold text-solar-textDark tracking-wide">Real-time Master Sales Ledger</h3>
-                                        <p className="text-[11px] text-solar-textMuted">{isAdmin ? 'Tap status badges to change status inline.' : 'Platform Locked. Administrative authorization required to edit entries.'}</p>
+                                        <p className="text-[11px] text-solar-textMuted">
+                                            {isAdmin ? 'Tap status badges to change status inline.' : 'Platform Locked. Administrative authorization required to edit entries.'} 
+                                            <span className="inline-block lg:hidden text-solar-primary font-semibold ml-1">Swipe table grid horizontally to display hidden items.</span>
+                                        </p>
                                     </div>
-                                    <div className="text-[11px] font-medium text-solar-textMuted bg-slate-50 px-3 py-1.5 rounded-lg border border-solar-border w-full sm:w-auto text-center">Showing <strong className="text-solar-textDark font-bold">{filteredProjects.length}</strong> of <strong className="text-solar-textDark font-bold">{projects.length}</strong> entries</div>
+                                    <div className="text-[11px] font-medium text-solar-textMuted bg-slate-50 px-3 py-1.5 rounded-lg border border-solar-border w-full sm:w-auto text-center">
+                                        Showing <strong className="text-solar-textDark font-bold">{filteredProjects.length}</strong> of <strong className="text-solar-textDark font-bold">{projects.length}</strong> entries
+                                    </div>
                                 </div>
 
-                                <div className="flex-1 overflow-x-auto w-full">
+                                <div className="flex-1 overflow-x-auto overflow-y-visible lg:overflow-y-auto w-full">
                                     <table className="w-full text-left border-collapse min-w-[1100px]">
                                         <thead>
                                             <tr className="bg-slate-50 border-b border-solar-border text-[10px] font-bold text-solar-textMuted uppercase tracking-wider sticky top-0 z-10">
@@ -775,7 +838,9 @@
                                                         <td className="px-5 py-3.5 text-right font-mono font-bold text-solar-textDark">{formatCurrency(project.value)}</td>
                                                         <td className="px-5 py-3.5 text-right font-mono">
                                                             <div className="font-bold text-slate-700">{formatCurrency(project.collection)}</div>
-                                                            {remainingToCollect > 0.01 && <div className="text-[10px] font-sans font-semibold text-solar-accentAmber mt-0.5 whitespace-nowrap">To Collect: {formatCurrency(remainingToCollect)}</div>}
+                                                            {remainingToCollect > 0.01 && (
+                                                                <div className="text-[10px] font-sans font-semibold text-solar-accentAmber mt-0.5 whitespace-nowrap">To Collect: {formatCurrency(remainingToCollect)}</div>
+                                                            )}
                                                         </td>
                                                         <td className="px-5 py-3.5 text-right font-mono font-bold text-solar-primary">{formatCurrency(project.profit)}</td>
                                                         <td className="px-5 py-3.5 text-center whitespace-nowrap">
@@ -785,14 +850,25 @@
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center relative">
                                                             {isAdmin ? (
-                                                                <button onClick={(e) => { e.stopPropagation(); setActiveStatusChangerId(activeStatusChangerId === project.id ? null : project.id); }} className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all shadow-sm flex items-center justify-center gap-1.5 mx-auto ${statusColor}`}>{project.status}<i className="fa-solid fa-chevron-down text-[8px] opacity-60"></i></button>
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); setActiveStatusChangerId(activeStatusChangerId === project.id ? null : project.id); }}
+                                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all shadow-sm flex items-center justify-center gap-1.5 mx-auto ${statusColor}`}
+                                                                >
+                                                                    {project.status}<i className="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
+                                                                </button>
                                                             ) : (
                                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center justify-center w-max mx-auto select-none ${statusColor.split('hover:')[0]}`}>{project.status}</span>
                                                             )}
+
                                                             {isAdmin && activeStatusChangerId === project.id && (
                                                                 <div className="absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-white border border-solar-border rounded-lg shadow-xl z-20 overflow-hidden text-left animate-fade-in">
                                                                     {['Completed', 'Not handover', 'Last payment against PN'].map(statusOption => (
-                                                                        <button key={statusOption} onClick={() => handleStatusQuickChange(project.id, statusOption)} className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${project.status === statusOption ? 'text-solar-primary font-bold bg-sky-50/50' : 'text-solar-textDark'}`}><span className={`w-1.5 h-1.5 rounded-full ${statusOption === 'Completed' ? 'bg-emerald-500' : statusOption === 'Not handover' ? 'bg-sky-500' : 'bg-purple-500'}`}></span>{statusOption}</button>
+                                                                        <button
+                                                                            key={statusOption} onClick={() => handleStatusQuickChange(project.id, statusOption)}
+                                                                            className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${project.status === statusOption ? 'text-solar-primary font-bold bg-sky-50/50' : 'text-solar-textDark'}`}
+                                                                        >
+                                                                            <span className={`w-1.5 h-1.5 rounded-full ${statusOption === 'Completed' ? 'bg-emerald-500' : statusOption === 'Not handover' ? 'bg-sky-500' : 'bg-purple-500'}`}></span>{statusOption}
+                                                                        </button>
                                                                     ))}
                                                                 </div>
                                                             )}
@@ -831,7 +907,11 @@
                                 <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Platform Secret Key</label>
-                                        <input type="password" placeholder="••••••••" value={enteredPassword} onChange={(e) => { setEnteredPassword(e.target.value); setPasswordError(false); }} className={`w-full bg-solar-bgMain border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none tracking-widest ${passwordError ? 'border-red-500' : 'border-solar-border'}`} autoFocus />
+                                        <input 
+                                            type="password" placeholder="••••••••" value={enteredPassword}
+                                            onChange={(e) => { setEnteredPassword(e.target.value); setPasswordError(false); }}
+                                            className={`w-full bg-solar-bgMain border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none tracking-widest ${passwordError ? 'border-red-500' : 'border-solar-border'}`} autoFocus
+                                        />
                                         {passwordError && <p className="text-[10px] text-red-600 font-semibold mt-1">Incorrect credentials. Authentication failed.</p>}
                                     </div>
                                     <div className="flex justify-end gap-2 pt-2">
@@ -854,6 +934,7 @@
                                     </h3>
                                     <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-solar-textDark focus:outline-none"><i className="fa-solid fa-xmark text-lg"></i></button>
                                 </div>
+
                                 <form onSubmit={handleFormSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 sm:gap-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
@@ -873,6 +954,7 @@
                                             </select>
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-1 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Customer / Client Name *</label>
@@ -883,6 +965,7 @@
                                             <input type="text" placeholder="e.g. Supply of PV panels" required value={currentProject.desc} onChange={(e) => setCurrentProject(prev => ({ ...prev, desc: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-solar-border pt-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Order Value (SAR)</label>
@@ -897,6 +980,7 @@
                                             <input type="number" step="any" value={currentProject.collection} onChange={(e) => setCurrentProject(prev => ({ ...prev, collection: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-solar-border pt-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Net Joint Profit (SAR)</label>
@@ -911,6 +995,7 @@
                                             <input type="number" step="any" value={currentProject.jubileeProfit} onChange={(e) => setCurrentProject(prev => ({ ...prev, jubileeProfit: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
+
                                     <div className="bg-slate-50 p-3 rounded-lg border border-solar-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
                                         <div>
                                             <p className="text-[10px] font-bold text-solar-textDark uppercase">Automated JV Profit Splitting Tool</p>
@@ -921,6 +1006,7 @@
                                             <button type="button" onClick={() => runAutoSplit('split50')} className="flex-1 sm:flex-initial text-center px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-solar-accentGreen text-[10px] font-bold hover:bg-solar-accentGreen hover:text-white transition-colors">50/50 Split</button>
                                         </div>
                                     </div>
+
                                     <div className="border-t border-solar-border pt-4 flex justify-end gap-3 shrink-0">
                                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-100 text-solar-textMuted rounded-lg text-xs font-semibold">Cancel</button>
                                         <button type="submit" className="px-5 py-2 bg-solar-primary text-white rounded-lg text-xs font-bold shadow-sm">Save Changes</button>
@@ -931,7 +1017,9 @@
                     )}
 
                     {notification && (
-                        <div className={`fixed bottom-5 right-5 z-[200] px-4 py-2.5 rounded-lg text-xs font-bold text-white shadow-xl flex items-center gap-2 animate-fade-in ${notification.type === 'error' ? 'bg-red-600' : notification.type === 'warning' ? 'bg-amber-600' : 'bg-emerald-600'}`}>
+                        <div className={`fixed bottom-5 right-5 z-[200] px-4 py-2.5 rounded-lg text-xs font-bold text-white shadow-xl flex items-center gap-2 animate-fade-in ${
+                            notification.type === 'error' ? 'bg-red-600' : notification.type === 'warning' ? 'bg-amber-600' : 'bg-emerald-600'
+                        }`}>
                             <i className={`fa-solid ${notification.type === 'error' ? 'fa-circle-exclamation' : notification.type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check'}`}></i>
                             {notification.message}
                         </div>
