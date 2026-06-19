@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFAQ Renewables - Executive Solar Sales Cockpit</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -33,9 +34,11 @@
             }
         }
     </script>
+    <!-- Inter Font & FontAwesome for Premium Feel -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Stable Production Core Framework CDNs -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7.15.0/babel.min.js" crossorigin></script>
@@ -46,8 +49,8 @@
             font-family: 'Inter', sans-serif;
             scrollbar-width: thin;
             scrollbar-color: #CBD5E1 #F1F5F9;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
-        /* Custom scrollbar styling for webkit */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -71,16 +74,15 @@
         }
     </style>
 </head>
-<body class="bg-solar-bgMain text-solar-textDark min-h-full flex flex-col antialiased">
+<body class="min-h-full flex flex-col antialiased">
 
+    <!-- Target mounting point for our React Application -->
     <div id="root" class="min-h-screen lg:h-screen flex flex-col"></div>
 
+    <!-- React Application Implementation -->
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // =========================================================================
-        // REAL-TIME TEAM CLOUD SYNC PARAMETERS
-        // =========================================================================
         const SUPABASE_URL = "https://ygzejawnhswhumwbitob.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_2ANSi_Ikn_ilWy-PSoKG6Q_0qH1udEc";
 
@@ -120,6 +122,10 @@
         function App() {
             const [projects, setProjects] = useState([]);
             const [isTableLoading, setIsTableLoading] = useState(true);
+
+            // System Presentation States
+            const [isDarkMode, setIsDarkMode] = useState(false);
+            const [selectedCustomerChart, setSelectedCustomerChart] = useState('All');
 
             // Gatekeeper Security States
             const [isAdmin, setIsAdmin] = useState(false);
@@ -221,7 +227,7 @@
                 }
             };
 
-            // 1. STABLE DEFENSIVE WORKSPACE FILTERING ENGINE
+            // 1. DYNAMIC STABLE ISOLATION FILTERING ENGINE (Includes chart interactive click layer)
             const filteredProjects = useMemo(() => {
                 return projects.filter(p => {
                     const customerStr = String(p.customer || '').toLowerCase();
@@ -232,22 +238,40 @@
                     const matchesSearch = customerStr.includes(searchTarget) || descStr.includes(searchTarget) || orderNoStr.includes(searchTarget);
                     const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
                     const matchesYear = yearFilter === 'All' || String(p.year) === yearFilter;
-                    return matchesSearch && matchesStatus && matchesYear;
+                    const matchesChartSync = selectedCustomerChart === 'All' || p.customer === selectedCustomerChart;
+                    
+                    return matchesSearch && matchesStatus && matchesYear && matchesChartSync;
                 });
-            }, [projects, searchQuery, statusFilter, yearFilter]);
+            }, [projects, searchQuery, statusFilter, yearFilter, selectedCustomerChart]);
 
-            // 2. DYNAMIC METRICS RE-CALCULATION LAYER (Now running perfectly over filtered scope!)
+            // 2. RUNTIME CUMULATIVE METRICS COMPUTE LAYER (Includes Receivables Aging Profile buckets)
             const metrics = useMemo(() => {
                 let totalPipeline = 0; let totalBilled = 0; let totalCollected = 0;
                 let totalProfit = 0; let totalAfaq = 0; let totalJubilee = 0;
+                let agingHighRisk = 0; let agingMediumRisk = 0; let agingStandard = 0;
 
                 filteredProjects.forEach(p => {
-                    totalPipeline += Number(p.value || 0);
+                    const val = Number(p.value || 0);
+                    const col = Number(p.collection || 0);
+                    const outstanding = val - col;
+
+                    totalPipeline += val;
                     totalBilled += Number(p.billed || 0);
-                    totalCollected += Number(p.collection || 0);
+                    totalCollected += col;
                     totalProfit += Number(p.profit || 0);
                     totalAfaq += Number(p.afaqProfit || 0);
                     totalJubilee += Number(p.jubileeProfit || 0);
+
+                    // P1.F1: Capital Exposure Risk Bucketing Logic
+                    if (outstanding > 0.01) {
+                        if (p.status === 'Last payment against PN') {
+                            agingHighRisk += outstanding;
+                        } else if (p.status === 'Not handover') {
+                            agingMediumRisk += outstanding;
+                        } else {
+                            agingStandard += outstanding;
+                        }
+                    }
                 });
 
                 const outstandingReceivables = totalPipeline - totalCollected;
@@ -256,7 +280,11 @@
                 const billingRatio = totalPipeline > 0 ? (totalBilled / totalPipeline) * 100 : 0;
                 const collectionRatio = totalPipeline > 0 ? (totalCollected / totalPipeline) * 100 : 0;
 
-                return { totalPipeline, totalBilled, totalCollected, totalProfit, totalAfaq, totalJubilee, outstandingReceivables, unbilledAmount, profitMargin, billingRatio, collectionRatio };
+                return { 
+                    totalPipeline, totalBilled, totalCollected, totalProfit, totalAfaq, totalJubilee, 
+                    outstandingReceivables, unbilledAmount, profitMargin, billingRatio, collectionRatio,
+                    agingHighRisk, agingMediumRisk, agingStandard
+                };
             }, [filteredProjects]);
 
             const customerGroupData = useMemo(() => {
@@ -298,34 +326,14 @@
                         id,
                         orderNo: formatted.orderNo || `N/A-${id.slice(-4)}`
                     };
-                    
                     setProjects(prev => [newProject, ...prev]);
-                    showToast("Record appended and locked into system configuration layout.");
-                    
-                    if (isCloudConfigured) {
-                        const { error } = await supabase.from('ledger').insert([newProject]);
-                        if (error) {
-                            console.error("Supabase Write Blocked:", error);
-                            showToast("Cloud sync pending. Data remains safe and complete on your device.", "warning");
-                        } else {
-                            showToast("Database cloud metrics row synchronized successfully.");
-                        }
-                    }
+                    showToast("Record appended and locked into system layout.");
+                    if (isCloudConfigured) await supabase.from('ledger').insert([newProject]);
                 } else {
                     setProjects(prev => prev.map(p => p.id === currentProject.id ? formatted : p));
                     showToast("Local ledger contract details modified.");
-                    
-                    if (isCloudConfigured) {
-                        const { error } = await supabase.from('ledger').update(formatted).eq('id', formatted.id);
-                        if (error) {
-                            console.error("Supabase Edit Blocked:", error);
-                            showToast("Cloud update pending. Data remains safe on your device.", "warning");
-                        } else {
-                            showToast("Database cloud profile matrix updated successfully.");
-                        }
-                    }
+                    if (isCloudConfigured) await supabase.from('ledger').update(formatted).eq('id', formatted.id);
                 }
-
                 setIsModalOpen(false);
             };
 
@@ -345,14 +353,10 @@
 
             const handleDelete = async (id) => {
                 if (!isAdmin) return;
-                if (window.confirm("Are you sure you want to remove this client from the executive sales record? This action will immediately recalculate all cumulative joint metrics.")) {
+                if (window.confirm("Are you sure you want to remove this client from the executive sales record?")) {
                     setProjects(prev => prev.filter(p => p.id !== id));
-                    showToast("Contract removed from master memory structure.", "warning");
-                    
-                    if (isCloudConfigured) {
-                        const { error } = await supabase.from('ledger').delete().eq('id', id);
-                        if (error) console.error("Cloud delete skipped due to token permissions.");
-                    }
+                    showToast("Contract removed from memory structure.", "warning");
+                    if (isCloudConfigured) await supabase.from('ledger').delete().eq('id', id);
                 }
             };
 
@@ -361,11 +365,7 @@
                 setProjects(prev => prev.map(p => p.id === id ? { ...p, status: newStatus, lastUpdated: Date.now() } : p));
                 setActiveStatusChangerId(null);
                 showToast("Project execution status updated.");
-                
-                if (isCloudConfigured) {
-                    const { error } = await supabase.from('ledger').update({ status: newStatus, lastUpdated: Date.now() }).eq('id', id);
-                    if (error) console.error("Cloud direct patch skipped.");
-                }
+                if (isCloudConfigured) await supabase.from('ledger').update({ status: newStatus, lastUpdated: Date.now() }).eq('id', id);
             };
 
             const runAutoSplit = (type) => {
@@ -380,15 +380,12 @@
 
             const handleResetToBaseline = async () => {
                 if (!isAdmin) return;
-                if (window.confirm("Warning: This will overwrite all custom inputs, modifications, and newly added clients back to the original audited 2025/2026 baseline records. Proceed?")) {
+                if (window.confirm("Warning: This will overwrite all custom inputs back to baseline records. Proceed?")) {
                     setProjects(BASELINE_LEDGER);
-                    showToast("Reverted system memory configurations back to clean baseline data templates.", "warning");
-                    
+                    showToast("Reverted system memory back to audited clean baseline.", "warning");
                     if (isCloudConfigured) {
-                        setIsTableLoading(true);
                         await supabase.from('ledger').delete().neq('id', '0');
                         await supabase.from('ledger').insert(BASELINE_LEDGER);
-                        setIsTableLoading(false);
                     }
                 }
             };
@@ -401,35 +398,34 @@
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `AFAQ_Solar_Sales_Filtered_${new Date().toISOString().split('T')[0]}.csv`);
+                link.setAttribute("download", `AFAQ_Solar_Sales_Master_Filtered.csv`);
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                showToast("CSV file for the active filtered selection prepared and downloaded.");
             };
 
             const formatCurrency = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 
             return (
-                <div className="flex-1 flex flex-col lg:h-full lg:overflow-hidden bg-solar-bgMain">
+                <div className={`flex-1 flex flex-col lg:h-full lg:overflow-hidden ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-solar-bgMain text-solar-textDark'}`}>
                     
-                    {/* Header bar inspired by Tier 1 corporate designs */}
-                    <header className="bg-solar-cardBg border-b border-solar-border px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm shrink-0">
+                    {/* Header bar styled for Tier 1 executive review */}
+                    <header className={`border-b px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm shrink-0 transition-colors duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                         <div className="flex items-center gap-3 w-full md:w-auto select-none">
                             <div className="bg-[#0081C9] w-[46px] h-[46px] rounded-[13px] flex items-center justify-center text-white shadow-sm shrink-0">
                                 <i className="fa-solid fa-solar-panel text-2xl"></i>
                             </div>
                             <div className="flex flex-col">
                                 <div className="flex items-baseline flex-wrap gap-y-1">
-                                    <span className="text-2xl font-[900] text-[#0A1128] tracking-tight antialiased">AFAQ</span>
+                                    <span className={`text-2xl font-[900] tracking-tight antialiased ${isDarkMode ? 'text-white' : 'text-[#0A1128]'}`}>AFAQ</span>
                                     <span className="text-2xl font-normal text-[#475569] tracking-tight ml-1.5 antialiased">Renewables</span>
                                     
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2.5 self-center transition-colors ${
-                                        isAdmin ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2.5 self-center ${
+                                        isAdmin ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
                                     }`}>
-                                        {isAdmin ? 'Admin Console Active' : 'Read-Only View'}
+                                        {isAdmin ? 'Admin Mode' : 'Read-Only'}
                                     </span>
 
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2 self-center transition-colors bg-sky-50 text-solar-primary border-sky-200">
-                                        <i className="fa-solid fa-cloud mr-1"></i>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ml-2 self-center bg-sky-500/10 text-solar-primary border-sky-500/20">
+                                        <i className="fa-solid fa-layer-group mr-1"></i>
                                         LIVE WORKSPACE RECALCULATOR
                                     </span>
                                 </div>
@@ -438,28 +434,40 @@
                         </div>
 
                         <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3 w-full md:w-auto">
+                            
+                            {/* P2.F2: Dark Mode Toggle Anchor */}
                             <button 
-                                onClick={() => isAdmin ? (setIsAdmin(false), showToast("Platform locked. Returned safely to View Mode.", "warning")) : setIsAuthModalOpen(true)}
+                                onClick={() => setIsDarkMode(!isDarkMode)}
+                                className={`p-2 rounded-lg border transition-all text-sm flex items-center justify-center w-9 h-9 ${
+                                    isDarkMode ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                                }`}
+                                title={isDarkMode ? "Switch to Corporate Light View" : "Switch to Midnight Executive Slate Theme"}
+                            >
+                                <i className={`fa-solid ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
+                            </button>
+
+                            <button 
+                                onClick={() => isAdmin ? (setIsAdmin(false), showToast("Platform locked. Swapped safely to View Mode.", "warning")) : setIsAuthModalOpen(true)}
                                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 flex-1 sm:flex-initial justify-center shadow-sm ${
-                                    isAdmin ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100' : 'bg-sky-50 border-sky-200 text-solar-primary hover:bg-sky-100'
+                                    isAdmin ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' : 'bg-sky-500/10 border-sky-500/20 text-solar-primary hover:bg-sky-500/20'
                                 }`}
                             >
                                 <i className={`fa-solid ${isAdmin ? 'fa-lock-open' : 'fa-lock'}`}></i>
-                                {isAdmin ? 'Lock Platform' : 'Unlock Platform'}
+                                {isAdmin ? 'Lock Controls' : 'Unlock Admin'}
                             </button>
 
                             {isAdmin && (
                                 <button 
                                     onClick={handleResetToBaseline}
-                                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-solar-textMuted rounded-lg text-xs font-semibold transition-all border border-solar-border flex items-center gap-1.5 flex-1 sm:flex-initial justify-center animate-fade-in"
+                                    className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-solar-textMuted rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-1 sm:flex-initial justify-center hover:bg-slate-500/20"
                                 >
-                                    <i className="fa-solid fa-rotate-left"></i> Baseline
+                                    <i className="fa-solid fa-rotate-left"></i> Revert Data
                                 </button>
                             )}
                             
                             <button 
                                 onClick={handleExportCSV}
-                                className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-solar-textMuted rounded-lg text-xs font-semibold transition-all border border-solar-border flex items-center gap-1.5 flex-1 sm:flex-initial justify-center"
+                                className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-solar-textMuted rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-1 sm:flex-initial justify-center hover:bg-slate-500/20"
                             >
                                 <i className="fa-solid fa-file-csv"></i> Export CSV
                             </button>
@@ -467,7 +475,7 @@
                             {isAdmin && (
                                 <button 
                                     onClick={openAddModal}
-                                    className="px-4 py-2 bg-solar-primary hover:bg-solar-primaryHover text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-sky-500/10 flex items-center gap-1.5 w-full sm:w-auto justify-center animate-fade-in"
+                                    className="px-4 py-2 bg-solar-primary hover:bg-solar-primaryHover text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-sky-500/10 flex items-center gap-1.5 w-full sm:w-auto justify-center"
                                 >
                                     <i className="fa-solid fa-circle-plus text-sm"></i> Add Client Order
                                 </button>
@@ -475,23 +483,25 @@
                         </div>
                     </header>
 
-                    <div className="lg:hidden bg-solar-cardBg border-b border-solar-border px-4 py-2.5 flex justify-between items-center shrink-0">
+                    {/* Mobile filter button container */}
+                    <div className={`lg:hidden border-b px-4 py-2.5 flex justify-between items-center shrink-0 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                         <button 
                             onClick={() => setShowMobileFilters(!showMobileFilters)} 
-                            className="text-xs font-bold text-solar-textDark flex items-center gap-2 bg-solar-bgMain px-3 py-2 border border-solar-border rounded-lg w-full justify-between focus:outline-none"
+                            className="text-xs font-bold flex items-center gap-2 bg-slate-500/10 px-3 py-2 border border-slate-500/20 rounded-lg w-full justify-between focus:outline-none"
                         >
                             <span className="flex items-center gap-1.5">
                                 <i className="fa-solid fa-sliders text-solar-primary"></i> 
-                                {statusFilter !== 'All' || yearFilter !== 'All' || searchQuery ? 'Workspace Filters (Active)' : 'Filter & Search Workspace'}
+                                Workspace Filtering Engine
                             </span>
-                            <i className={`fa-solid ${showMobileFilters ? 'fa-chevron-up' : 'fa-chevron-down'} text-solar-textMuted`}></i>
+                            <i className={`fa-solid ${showMobileFilters ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
                         </button>
                     </div>
 
                     <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden min-h-0">
-                        <aside className="w-full lg:w-80 bg-solar-cardBg p-5 border-b lg:border-b-0 lg:border-r border-solar-border flex flex-col gap-5 shrink-0 lg:flex lg:overflow-y-auto">
+                        {/* Interactive Sidebar Panel */}
+                        <aside className={`w-full lg:w-80 p-5 border-b lg:border-b-0 lg:border-r flex flex-col gap-5 shrink-0 ${showMobileFilters ? 'block' : 'hidden lg:flex'} lg:overflow-y-auto ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark mb-1">Interactive Filters</h3>
+                                <h3 className="text-xs font-bold uppercase tracking-wider mb-1">Interactive Filters</h3>
                                 <p className="text-[11px] text-solar-textMuted">Slice distribution volumes by statuses, timelines, and customer tags.</p>
                             </div>
 
@@ -503,7 +513,9 @@
                                         placeholder="Order No, client, keywords..." 
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 pl-9 text-xs text-solar-textDark focus:outline-none focus:border-solar-primary"
+                                        className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-solar-primary ${
+                                            isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-solar-bgMain border-solar-border text-solar-textDark'
+                                        }`}
                                     />
                                     <i className="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                                     {searchQuery && (
@@ -523,12 +535,12 @@
                                             onClick={() => setStatusFilter(status)}
                                             className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all flex items-center justify-between ${
                                                 statusFilter === status 
-                                                    ? 'bg-sky-50 text-solar-primary border border-sky-200 font-semibold shadow-sm' 
-                                                    : 'bg-solar-bgMain/60 text-solar-textMuted border border-transparent hover:bg-slate-100 hover:text-solar-textDark'
+                                                    ? 'bg-sky-500/10 text-solar-primary border border-sky-500/30 font-semibold shadow-sm' 
+                                                    : 'text-solar-textMuted border border-transparent hover:bg-slate-500/5 hover:text-solar-textDark'
                                             }`}
                                         >
                                             <span>{status}</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-slate-200/60 rounded text-solar-textMuted font-mono">
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-200/60 text-solar-textMuted'}`}>
                                                 {status === 'All' ? projects.length : projects.filter(p => p.status === status).length}
                                             </span>
                                         </button>
@@ -545,8 +557,8 @@
                                             onClick={() => setYearFilter(year)}
                                             className={`flex-1 text-center py-1.5 rounded-lg text-xs transition-all border ${
                                                 yearFilter === year 
-                                                    ? 'bg-sky-50 text-solar-primary border-sky-300 font-semibold shadow-sm' 
-                                                    : 'bg-solar-bgMain border-solar-border text-solar-textMuted hover:bg-slate-50'
+                                                    ? 'bg-sky-500/10 text-solar-primary border-sky-500/30 font-semibold shadow-sm' 
+                                                    : isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700' : 'bg-solar-bgMain border-solar-border text-solar-textMuted hover:bg-slate-50'
                                             }`}
                                         >
                                             {year}
@@ -555,74 +567,76 @@
                                 </div>
                             </div>
 
-                            <div className="mt-2 lg:mt-auto pt-4 border-t border-solar-border bg-solar-bgMain/60 p-3.5 rounded-xl border border-dashed border-slate-200">
+                            {/* P2.F1: Clear Interactive Chart Filters Trigger Tag */}
+                            {selectedCustomerChart !== 'All' && (
+                                <div className="mt-1 bg-sky-500/5 border border-sky-500/20 p-2.5 rounded-xl animate-fade-in">
+                                    <div className="flex justify-between items-center text-[10px] text-solar-primary font-bold">
+                                        <span>Chart Scope Filter Active</span>
+                                        <button onClick={() => setSelectedCustomerChart('All')} className="text-slate-400 hover:text-red-400 text-xs font-black">
+                                            Clear <i className="fa-solid fa-circle-xmark"></i>
+                                        </button>
+                                    </div>
+                                    <p className={`text-[11px] truncate font-medium mt-0.5 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{selectedCustomerChart}</p>
+                                </div>
+                            )}
+
+                            <div className="mt-2 lg:mt-auto pt-4 border-t border-solar-border bg-solar-bgMain/30 p-3.5 rounded-xl border border-dashed border-slate-500/20">
                                 <h4 className="text-[10px] font-bold uppercase text-solar-primary mb-2 tracking-wider flex items-center gap-1">
                                     <i className="fa-solid fa-handshake"></i> Partnership Dynamics
                                 </h4>
                                 <div className="flex justify-between text-[10px] text-solar-textMuted mb-1.5">
                                     <span>AFAQ Profit Share</span>
-                                    <span className="text-solar-textDark font-bold">{metrics.totalProfit > 0 ? ((metrics.totalAfaq / metrics.totalProfit) * 100).toFixed(1) : 0}%</span>
+                                    <span className="font-bold">{metrics.totalProfit > 0 ? ((metrics.totalAfaq / metrics.totalProfit) * 100).toFixed(1) : 0}%</span>
                                 </div>
-                                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mb-3 flex">
-                                    <div 
-                                        style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalAfaq / metrics.totalProfit) * 100 : 0}%` }} 
-                                        className="bg-solar-primary h-full"
-                                    ></div>
-                                    <div 
-                                        style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalJubilee / metrics.totalProfit) * 100 : 0}%` }} 
-                                        className="bg-solar-accentGreen h-full"
-                                    ></div>
+                                <div className="w-full bg-slate-500/20 h-1.5 rounded-full overflow-hidden mb-3 flex">
+                                    <div style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalAfaq / metrics.totalProfit) * 100 : 0}%` }} className="bg-solar-primary h-full"></div>
+                                    <div style={{ width: `${metrics.totalProfit > 0 ? (metrics.totalJubilee / metrics.totalProfit) * 100 : 0}%` }} className="bg-solar-accentGreen h-full"></div>
                                 </div>
                                 <div className="flex items-center gap-2 justify-between text-[10px] font-medium">
-                                    <span className="flex items-center gap-1.5 text-solar-textMuted">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-solar-primary"></span> AFAQ
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-solar-textMuted">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-solar-accentGreen"></span> Jubilee Bros
-                                    </span>
+                                    <span className="flex items-center gap-1.5 text-solar-textMuted"><span className="w-1.5 h-1.5 rounded-full bg-solar-primary"></span> AFAQ</span>
+                                    <span className="flex items-center gap-1.5 text-solar-textMuted"><span className="w-1.5 h-1.5 rounded-full bg-solar-accentGreen"></span> Jubilee Bros</span>
                                 </div>
                             </div>
                         </aside>
 
+                        {/* Core Workspace Hub */}
                         <main className="flex-1 p-4 sm:p-5 flex flex-col gap-5 overflow-y-visible lg:overflow-y-auto min-h-0">
+                            
+                            {/* Upper Executive Summaries Dashboard Section */}
                             <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 shrink-0">
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
+                                <div className={`p-5 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-slate-200/90 shadow-sm'}`}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales Pipeline</span>
-                                        <div className="bg-sky-50 p-2 rounded-xl text-solar-primary border border-sky-100 w-8 h-8 flex items-center justify-center">
+                                        <div className="bg-sky-500/10 p-2 rounded-xl text-solar-primary border border-sky-500/10 flex items-center justify-center w-8 h-8">
                                             <i className="fa-solid fa-chart-line text-xs"></i>
                                         </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
-                                                {formatCurrency(metrics.totalPipeline)}
-                                            </span>
+                                            <span className="text-xl sm:text-2xl font-extrabold tracking-tight leading-none">{formatCurrency(metrics.totalPipeline)}</span>
                                             <span className="text-[11px] font-bold text-solar-primary ml-1.5">SAR</span>
                                         </div>
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                                        <div className="mt-3 pt-2.5 border-t border-slate-500/10 flex items-center gap-1.5 text-[11px] font-medium text-solar-textMuted">
                                             <i className="fa-solid fa-circle text-[6px] text-solar-primary"></i>
-                                            <span>From {filteredProjects.length} tracked contracts</span>
+                                            <span>From {filteredProjects.length} tracked lines</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
+                                <div className={`p-5 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-slate-200/90 shadow-sm'}`}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Invoiced Volume</span>
-                                        <div className="bg-blue-50 p-2 rounded-xl text-solar-blue border border-blue-100 w-8 h-8 flex items-center justify-center">
+                                        <div className="bg-blue-50/10 p-2 rounded-xl text-solar-blue border border-blue-500/10 flex items-center justify-center w-8 h-8">
                                             <i className="fa-solid fa-file-invoice-dollar text-xs"></i>
                                         </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
-                                                {formatCurrency(metrics.totalBilled)}
-                                            </span>
+                                            <span className="text-xl sm:text-2xl font-extrabold tracking-tight leading-none">{formatCurrency(metrics.totalBilled)}</span>
                                             <span className="text-[11px] font-bold text-solar-blue ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 flex flex-col gap-1">
-                                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                            <div className="w-full bg-slate-500/10 h-1.5 rounded-full overflow-hidden">
                                                 <div style={{ width: `${metrics.billingRatio}%` }} className="bg-solar-blue h-full rounded-full"></div>
                                             </div>
                                             <div className="flex justify-between items-center text-[10px] font-bold text-solar-blue mt-0.5">
@@ -633,22 +647,20 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
+                                <div className={`p-5 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-slate-200/90 shadow-sm'}`}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cash Collected</span>
-                                        <div className="bg-emerald-50 p-2 rounded-xl text-solar-accentGreen border border-emerald-100 w-8 h-8 flex items-center justify-center">
+                                        <div className="bg-emerald-500/10 p-2 rounded-xl text-solar-accentGreen border border-emerald-500/10 flex items-center justify-center w-8 h-8">
                                             <i className="fa-solid fa-vault text-xs"></i>
                                         </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
-                                                {formatCurrency(metrics.totalCollected)}
-                                            </span>
+                                            <span className="text-xl sm:text-2xl font-extrabold tracking-tight leading-none">{formatCurrency(metrics.totalCollected)}</span>
                                             <span className="text-[11px] font-bold text-solar-accentGreen ml-1.5">SAR</span>
                                         </div>
                                         <div className="mt-3 flex flex-col gap-1">
-                                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                            <div className="w-full bg-slate-500/10 h-1.5 rounded-full overflow-hidden">
                                                 <div style={{ width: `${metrics.collectionRatio}%` }} className="bg-solar-accentGreen h-full rounded-full"></div>
                                             </div>
                                             <div className="flex justify-between items-center text-[10px] font-bold text-solar-accentGreen mt-0.5">
@@ -659,80 +671,105 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex flex-col justify-between">
+                                <div className={`p-5 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-slate-200/90 shadow-sm'}`}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Net Margin Returns</span>
-                                        <div className="bg-purple-50 p-2 rounded-xl text-solar-accentPurple border border-purple-100 w-8 h-8 flex items-center justify-center">
+                                        <div className="bg-purple-500/10 p-2 rounded-xl text-solar-accentPurple border border-purple-500/10 flex items-center justify-center w-8 h-8">
                                             <i className="fa-solid fa-hand-holding-dollar text-xs"></i>
                                         </div>
                                     </div>
                                     <div className="mt-4 flex flex-col">
                                         <div className="flex items-baseline flex-wrap">
-                                            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
-                                                {formatCurrency(metrics.totalProfit)}
-                                            </span>
+                                            <span className="text-xl sm:text-2xl font-extrabold tracking-tight leading-none">{formatCurrency(metrics.totalProfit)}</span>
                                             <span className="text-[11px] font-bold text-solar-accentPurple ml-1.5">SAR</span>
                                         </div>
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-[11px] font-semibold text-solar-accentPurple">
-                                            <span>Consolidated Portfolio Yield</span>
-                                            <span className="font-mono bg-purple-50 px-2 py-0.5 rounded border border-purple-100">{metrics.profitMargin.toFixed(2)}%</span>
+                                        <div className="mt-3 pt-2.5 border-t border-slate-500/10 flex justify-between items-center text-[11px] font-semibold text-solar-accentPurple">
+                                            <span> JV Margin Yield</span>
+                                            <span className="font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">{metrics.profitMargin.toFixed(2)}%</span>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
+                            {/* P1.F1: WORKING CAPITAL RECEIVABLES RISK AGING PORTFOLIO SCREEN PANEL */}
                             {metrics.outstandingReceivables > 0 && (
-                                <section className="bg-amber-50/70 border border-amber-200 p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
-                                    <div className="flex items-start sm:items-center gap-3">
-                                        <div className="bg-amber-100 p-2 rounded-lg text-solar-accentAmber shrink-0">
-                                            <i className="fa-solid fa-circle-info text-sm"></i>
+                                <section className={`border p-4 rounded-xl flex flex-col gap-3 shrink-0 ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="bg-amber-500/10 p-2 rounded-lg text-solar-accentAmber shrink-0"><i className="fa-solid fa-scale-unbalanced text-sm"></i></div>
+                                            <div>
+                                                <h4 className="text-xs font-bold text-solar-accentAmber uppercase tracking-wider">Capital Outstanding Risk Exposure Dashboard</h4>
+                                                <p className="text-[11px] text-solar-textMuted">Derived aging tracking against promissory notes and technical deployment loops.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="text-xs font-bold text-amber-900">Outstanding Working Capital Receivables Gap Detected</h4>
-                                            <p className="text-[11px] text-amber-800">Total remaining balance to collect: <strong className="font-bold">{formatCurrency(metrics.outstandingReceivables)} SAR</strong>. These values track closely with supply agreements held against promissory notes.</p>
+                                        <div className={`text-xs px-3 py-1.5 rounded-lg font-extrabold font-mono shrink-0 w-full sm:w-auto text-center ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-amber-50 text-amber-900 border border-amber-200'}`}>
+                                            Total Balance Gap: {formatCurrency(metrics.outstandingReceivables)} SAR
                                         </div>
                                     </div>
-                                    <div className="text-[10px] bg-amber-100 px-3 py-1.5 rounded-lg text-amber-900 border border-amber-200 font-bold shrink-0 w-full sm:w-auto text-center">
-                                        Liquidity Exposure: {((metrics.outstandingReceivables / metrics.totalPipeline) * 100).toFixed(1)}%
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-[11px]">
+                                        <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDarkMode ? 'bg-slate-950/40 border-red-950' : 'bg-red-50/40 border-red-100'}`}>
+                                            <span className="font-bold text-red-500 uppercase tracking-wide"><i className="fa-solid fa-triangle-exclamation mr-1"></i> High Exposure (Against PN)</span>
+                                            <span className="font-mono font-black text-xs block mt-1">{formatCurrency(metrics.agingHighRisk)} SAR</span>
+                                        </div>
+                                        <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDarkMode ? 'bg-slate-950/40 border-purple-950' : 'bg-purple-50/40 border-purple-100'}`}>
+                                            <span className="font-bold text-solar-accentPurple uppercase tracking-wide"><i className="fa-solid fa-hourglass-half mr-1"></i> Medium Risk (Pending Handover)</span>
+                                            <span className="font-mono font-black text-xs block mt-1">{formatCurrency(metrics.agingMediumRisk)} SAR</span>
+                                        </div>
+                                        <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDarkMode ? 'bg-slate-950/40 border-emerald-950' : 'bg-emerald-50/40 border-emerald-100'}`}>
+                                            <span className="font-bold text-solar-accentGreen uppercase tracking-wide"><i className="fa-solid fa-circle-check mr-1"></i> Standard Collection Cycle</span>
+                                            <span className="font-mono font-black text-xs block mt-1">{formatCurrency(metrics.agingStandard)} SAR</span>
+                                        </div>
                                     </div>
                                 </section>
                             )}
 
+                            {/* Analytics Visual Layer */}
                             <section className="grid grid-cols-1 xl:grid-cols-5 gap-5 shrink-0">
-                                <div className="bg-solar-cardBg p-5 rounded-xl border border-solar-border xl:col-span-3 flex flex-col justify-between shadow-sm">
+                                {/* P2.F1: Clickable Top Customers Interactive Bar Sync Chart */}
+                                <div className={`p-5 rounded-xl border xl:col-span-3 flex flex-col justify-between shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                                     <div className="mb-4">
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5">
-                                            <i className="fa-solid fa-building text-solar-primary"></i> Top Customers by Contract Volume
-                                        </h3>
-                                        <p className="text-[11px] text-solar-textMuted mt-0.5">Top purchasing and procurement entities across KSA hubs</p>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"><i className="fa-solid fa-building text-solar-primary"></i> Client Order Distributions</h3>
+                                        <p className="text-[11px] text-solar-textMuted mt-0.5">Click any client row below to lock down entire cockpit metrics into that customer's allocation timeline.</p>
                                     </div>
 
-                                    <div className="flex flex-col gap-4 pt-1">
+                                    <div className="flex flex-col gap-3.5 pt-1">
                                         {customerGroupData.map((client, idx) => {
                                             const percent = (client.val / maxCustomerVal) * 100;
+                                            const isSelected = selectedCustomerChart === client.name;
                                             return (
-                                                <div key={idx} className="flex flex-col gap-1.5 text-xs">
-                                                    <div className="flex justify-between items-center text-[11px] gap-4">
-                                                        <span className="font-bold text-solar-textDark truncate max-w-[160px] sm:max-w-[240px]">{client.name}</span>
+                                                <button 
+                                                    key={idx} 
+                                                    onClick={() => setSelectedCustomerChart(isSelected ? 'All' : client.name)}
+                                                    className={`w-full text-left p-1.5 rounded-lg border transition-all flex flex-col gap-1 focus:outline-none ${
+                                                        isSelected 
+                                                            ? 'border-sky-500 bg-sky-500/5 shadow-inner' 
+                                                            : 'border-transparent hover:bg-slate-500/5'
+                                                    }`}
+                                                    title={`Isolate analytics for ${client.name}`}
+                                                >
+                                                    <div className="flex justify-between items-center text-[11px] w-full">
+                                                        <span className="font-bold truncate max-w-[240px] flex items-center gap-1.5">
+                                                            <i className={`fa-solid ${isSelected ? 'fa-circle-check text-solar-primary' : 'fa-building text-slate-400'}`}></i>
+                                                            {client.name}
+                                                        </span>
                                                         <span className="font-mono text-solar-primary font-bold whitespace-nowrap">{formatCurrency(client.val)} SAR</span>
                                                     </div>
-                                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative border border-slate-200/50">
+                                                    <div className="w-full bg-slate-500/10 h-2 rounded-full overflow-hidden relative border border-slate-500/5">
                                                         <div 
                                                             style={{ width: `${percent}%` }} 
-                                                            className="bg-gradient-to-r from-solar-primary to-sky-400 h-full rounded-full transition-all duration-700"
+                                                            className={`h-full rounded-full transition-all duration-500 ${isSelected ? 'bg-solar-primary' : 'bg-gradient-to-r from-solar-primary to-sky-400'}`}
                                                         ></div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             );
                                         })}
                                     </div>
                                 </div>
 
-                                <div className="bg-solar-cardBg p-5 rounded-xl border border-solar-border xl:col-span-2 flex flex-col shadow-sm">
+                                <div className={`p-5 rounded-xl border xl:col-span-2 flex flex-col shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                                     <div className="mb-4">
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-solar-textDark flex items-center gap-1.5">
-                                            <i className="fa-solid fa-chart-pie text-solar-primary"></i> Net Profit Allocation
-                                        </h3>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"><i className="fa-solid fa-chart-pie text-solar-primary"></i> Net Profit Allocation</h3>
                                         <p className="text-[11px] text-solar-textMuted mt-0.5">Distribution shares of the total margin yield</p>
                                     </div>
 
@@ -742,142 +779,124 @@
                                                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F1F5F9" strokeWidth="3"></circle>
                                                 {metrics.totalProfit > 0 && (
                                                     <React.Fragment>
-                                                        <circle 
-                                                            cx="18" 
-                                                            cy="18" 
-                                                            r="15.915" 
-                                                            fill="none" 
-                                                            stroke="#0284C7" 
-                                                            strokeWidth="3.5" 
-                                                            strokeDasharray={`${(metrics.totalAfaq / metrics.totalProfit) * 100} ${100 - ((metrics.totalAfaq / metrics.totalProfit) * 100)}`}
-                                                            strokeDashoffset="0"
-                                                        ></circle>
-                                                        <circle 
-                                                            cx="18" 
-                                                            cy="18" 
-                                                            r="15.915" 
-                                                            fill="none" 
-                                                            stroke="#10B981" 
-                                                            strokeWidth="3.5" 
-                                                            strokeDasharray={`${(metrics.totalJubilee / metrics.totalProfit) * 100} ${100 - ((metrics.totalJubilee / metrics.totalProfit) * 100)}`}
-                                                            strokeDashoffset={-((metrics.totalAfaq / metrics.totalProfit) * 100)}
-                                                        ></circle>
+                                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#0284C7" strokeWidth="3.5" strokeDasharray={`${(metrics.totalAfaq / metrics.totalProfit) * 100} ${100 - ((metrics.totalAfaq / metrics.totalProfit) * 100)}`} strokeDashoffset="0"></circle>
+                                                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10B981" strokeWidth="3.5" strokeDasharray={`${(metrics.totalJubilee / metrics.totalProfit) * 100} ${100 - ((metrics.totalJubilee / metrics.totalProfit) * 100)}`} strokeDashoffset={-((metrics.totalAfaq / metrics.totalProfit) * 100)}></circle>
                                                     </React.Fragment>
                                                 )}
                                             </svg>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                                                 <span className="text-[9px] font-bold text-solar-textMuted uppercase tracking-wider">Avg Yield</span>
-                                                <span className="text-sm sm:text-base font-black text-solar-textDark">{metrics.profitMargin.toFixed(1)}%</span>
+                                                <span className="text-sm font-black">{metrics.profitMargin.toFixed(1)}%</span>
                                             </div>
                                         </div>
 
                                         <div className="flex flex-col gap-2.5 text-[11px] w-full">
-                                            <div className="bg-slate-50 p-2 rounded-lg border border-solar-border">
-                                                <div className="flex items-center gap-1.5 text-solar-primary font-bold uppercase text-[10px]">
-                                                    <span className="w-2 h-2 rounded-full bg-solar-primary"></span> AFAQ Share
-                                                </div>
-                                                <p className="text-solar-textDark font-bold mt-0.5">{formatCurrency(metrics.totalAfaq)} SAR</p>
+                                            <div className="bg-slate-500/5 p-2 rounded-lg border border-slate-500/10">
+                                                <div className="flex items-center gap-1.5 text-solar-primary font-bold uppercase text-[10px]"><span className="w-2 h-2 rounded-full bg-solar-primary"></span> AFAQ Share</div>
+                                                <p className="font-bold mt-0.5">{formatCurrency(metrics.totalAfaq)} SAR</p>
                                             </div>
-                                            <div className="bg-slate-50 p-2 rounded-lg border border-solar-border">
-                                                <div className="flex items-center gap-1.5 text-solar-accentGreen font-bold uppercase text-[10px]">
-                                                    <span className="w-2 h-2 rounded-full bg-solar-accentGreen"></span> Jubilee Bros
-                                                </div>
-                                                <p className="text-solar-textDark font-bold mt-0.5">{formatCurrency(metrics.totalJubilee)} SAR</p>
+                                            <div className="bg-slate-500/5 p-2 rounded-lg border border-slate-500/10">
+                                                <div className="flex items-center gap-1.5 text-solar-accentGreen font-bold uppercase text-[10px]"><span className="w-2 h-2 rounded-full bg-solar-accentGreen"></span> Jubilee Bros</div>
+                                                <p className="font-bold mt-0.5">{formatCurrency(metrics.totalJubilee)} SAR</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
-                            <section className="bg-solar-cardBg rounded-xl border border-solar-border shadow-sm flex-1 flex flex-col min-h-[350px] overflow-hidden">
+                            {/* Master Sales Ledger Table Section */}
+                            <section className={`rounded-xl border shadow-sm flex-1 flex flex-col min-h-[350px] overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-solar-cardBg border-solar-border'}`}>
                                 <div className="px-4 sm:px-6 py-4 border-b border-solar-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
                                     <div>
-                                        <h3 className="text-sm font-bold text-solar-textDark tracking-wide">Real-time Master Sales Ledger</h3>
-                                        <p className="text-[11px] text-solar-textMuted">
-                                            {isAdmin ? 'Tap status badges to change status inline.' : 'Platform Locked. Administrative authorization required to edit entries.'} 
-                                            <span className="inline-block lg:hidden text-solar-primary font-semibold ml-1">Swipe table grid horizontally to display hidden items.</span>
-                                        </p>
+                                        <h3 className="text-sm font-bold tracking-wide">Real-time Master Sales Ledger</h3>
+                                        <p className="text-[11px] text-solar-textMuted">{isAdmin ? 'Tap status badges to change status inline.' : 'Platform Locked. Administrative authorization required to edit entries.'}</p>
                                     </div>
-                                    <div className="text-[11px] font-medium text-solar-textMuted bg-slate-50 px-3 py-1.5 rounded-lg border border-solar-border w-full sm:w-auto text-center">
-                                        Showing <strong className="text-solar-textDark font-bold">{filteredProjects.length}</strong> of <strong className="text-solar-textDark font-bold">{projects.length}</strong> entries
-                                    </div>
+                                    <div className="text-[11px] font-medium text-solar-textMuted bg-slate-500/5 px-3 py-1.5 rounded-lg border border-slate-500/10 w-full sm:w-auto text-center">Showing <strong className="font-bold">{filteredProjects.length}</strong> of <strong className="font-bold">{projects.length}</strong> entries</div>
                                 </div>
 
-                                <div className="flex-1 overflow-x-auto overflow-y-visible lg:overflow-y-auto w-full">
+                                <div className="flex-1 overflow-x-auto w-full">
                                     <table className="w-full text-left border-collapse min-w-[1100px]">
                                         <thead>
-                                            <tr className="bg-slate-50 border-b border-solar-border text-[10px] font-bold text-solar-textMuted uppercase tracking-wider sticky top-0 z-10">
+                                            <tr className={`border-b text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-solar-border text-solar-textMuted'}`}>
                                                 <th className="px-5 py-3 text-center w-20">Order No</th>
                                                 <th className="px-4 py-3 w-16">Year</th>
                                                 <th className="px-5 py-3 w-64">Client & Customer Entity</th>
                                                 <th className="px-5 py-3 w-80">Supply & Technical Scope</th>
                                                 <th className="px-5 py-3 text-right">Order Value</th>
                                                 <th className="px-5 py-3 text-right w-36">Cash Collected</th>
-                                                <th className="px-5 py-3 text-right">Net Profit</th>
+                                                <th className="px-5 py-3 text-right">Net Profit (Margin)</th>
                                                 <th className="px-5 py-3 text-center w-36 whitespace-nowrap">Split Share (AFAQ / JB)</th>
                                                 <th className="px-5 py-3 text-center w-48">Execution Status</th>
                                                 <th className="px-5 py-3 text-right w-24">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 text-xs text-solar-textMuted">
+                                        <tbody className={`divide-y text-xs ${isDarkMode ? 'divide-slate-800 text-slate-400' : 'divide-slate-100 text-solar-textMuted'}`}>
                                             {filteredProjects.map((project) => {
                                                 const afaqPct = project.profit > 0 ? Math.round((project.afaqProfit / project.profit) * 100) : 0;
                                                 const jubileePct = project.profit > 0 ? Math.round((project.jubileeProfit / project.profit) * 100) : 0;
                                                 const remainingToCollect = Number(project.value || 0) - Number(project.collection || 0);
+                                                
+                                                // P1.F3 Margin Health Computations
+                                                const rowMarginPct = Number(project.value || 0) > 0 ? (Number(project.profit || 0) / Number(project.value || 0)) * 100 : 0;
+                                                const isLowMargin = rowMarginPct < 5.0 && Number(project.profit || 0) > 0;
 
-                                                let statusColor = 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-                                                if (project.status === 'Not handover') statusColor = 'bg-sky-50 text-solar-primary border-sky-200 hover:bg-sky-100';
-                                                else if (project.status === 'Last payment against PN') statusColor = 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
+                                                let statusColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20';
+                                                if (project.status === 'Not handover') statusColor = 'bg-sky-500/10 text-solar-primary border-sky-500/20 hover:bg-sky-500/20';
+                                                else if (project.status === 'Last payment against PN') statusColor = 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20';
 
                                                 return (
-                                                    <tr key={project.id} className="hover:bg-slate-50/70 transition-colors group">
-                                                        <td className="px-5 py-3.5 text-center font-mono font-bold text-solar-textDark">{project.orderNo}</td>
-                                                        <td className="px-4 py-3.5 font-mono text-solar-textMuted">{project.year}</td>
-                                                        <td className="px-5 py-3.5 font-bold text-solar-textDark truncate max-w-xs">{project.customer}</td>
-                                                        <td className="px-5 py-3.5 text-solar-textMuted truncate max-w-sm" title={project.desc}>{project.desc}</td>
-                                                        <td className="px-5 py-3.5 text-right font-mono font-bold text-solar-textDark">{formatCurrency(project.value)}</td>
+                                                    <tr key={project.id} className={`transition-colors ${isDarkMode ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/70'}`}>
+                                                        <td className="px-5 py-3.5 text-center font-mono font-bold">{project.orderNo}</td>
+                                                        <td className="px-4 py-3.5 font-mono">{project.year}</td>
+                                                        <td className={`px-5 py-3.5 font-bold truncate max-w-xs ${isDarkMode ? 'text-white' : 'text-solar-textDark'}`}>{project.customer}</td>
+                                                        <td className="px-5 py-3.5 truncate max-w-sm" title={project.desc}>{project.desc}</td>
+                                                        <td className={`px-5 py-3.5 text-right font-mono font-bold ${isDarkMode ? 'text-white' : 'text-solar-textDark'}`}>{formatCurrency(project.value)}</td>
                                                         <td className="px-5 py-3.5 text-right font-mono">
-                                                            <div className="font-bold text-slate-700">{formatCurrency(project.collection)}</div>
-                                                            {remainingToCollect > 0.01 && (
-                                                                <div className="text-[10px] font-sans font-semibold text-solar-accentAmber mt-0.5 whitespace-nowrap">To Collect: {formatCurrency(remainingToCollect)}</div>
-                                                            )}
+                                                            <div className="font-bold text-slate-500">{formatCurrency(project.collection)}</div>
+                                                            {remainingToCollect > 0.01 && <div className="text-[10px] font-sans font-semibold text-solar-accentAmber mt-0.5 whitespace-nowrap" title="Outstanding payment balance pending receipt.">To Collect: {formatCurrency(remainingToCollect)}</div>}
                                                         </td>
-                                                        <td className="px-5 py-3.5 text-right font-mono font-bold text-solar-primary">{formatCurrency(project.profit)}</td>
-                                                        <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/60 rounded-md text-[11px] font-bold font-mono">
-                                                                <span className="text-solar-primary">{afaqPct}%</span><span className="text-slate-300 font-normal">/</span><span className="text-solar-accentGreen">{jubileePct}%</span>
+                                                        
+                                                        {/* P1.F3 Margin Guard Cell Alert */}
+                                                        <td className="px-5 py-3.5 text-right font-mono font-bold text-solar-primary">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <span>{formatCurrency(project.profit)}</span>
+                                                                <span className={`text-[10px] px-1 rounded font-normal ${isLowMargin ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-slate-400'}`}>
+                                                                    ({rowMarginPct.toFixed(1)}%)
+                                                                </span>
+                                                                {isLowMargin && (
+                                                                    <span className="text-amber-500" title="Low Margin Warning: Yield is below the 5% corporate safety threshold. Check procurement parameters.">
+                                                                        <i className="fa-solid fa-triangle-exclamation text-[10px]"></i>
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </td>
+                                                        
+                                                        <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border rounded-md text-[11px] font-bold font-mono ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200/60'}`}>
+                                                                <span className="text-solar-primary" title="AFAQ Share">{afaqPct}%</span><span className="text-slate-300 font-normal">/</span><span className="text-solar-accentGreen" title="Jubilee Share">{jubileePct}%</span>
+                                                            </div>
+                                                        </td>
+                                                        
+                                                        {/* P2.F3 Interactive Micro-Insight Badges with tooltips */}
                                                         <td className="px-5 py-3.5 text-center relative">
                                                             {isAdmin ? (
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); setActiveStatusChangerId(activeStatusChangerId === project.id ? null : project.id); }}
-                                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all shadow-sm flex items-center justify-center gap-1.5 mx-auto ${statusColor}`}
-                                                                >
-                                                                    {project.status}<i className="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
-                                                                </button>
+                                                                <button onClick={(e) => { e.stopPropagation(); setActiveStatusChangerId(activeStatusChangerId === project.id ? null : project.id); }} className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all shadow-sm flex items-center justify-center gap-1.5 mx-auto ${statusColor}`}>{project.status}<i className="fa-solid fa-chevron-down text-[8px] opacity-60"></i></button>
                                                             ) : (
-                                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center justify-center w-max mx-auto select-none ${statusColor.split('hover:')[0]}`}>{project.status}</span>
+                                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center justify-center w-max mx-auto select-none ${statusColor.split('hover:')[0]}`} title={`Contract Status details verified under code ${project.orderNo}`}>{project.status}</span>
                                                             )}
-
                                                             {isAdmin && activeStatusChangerId === project.id && (
                                                                 <div className="absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-white border border-solar-border rounded-lg shadow-xl z-20 overflow-hidden text-left animate-fade-in">
                                                                     {['Completed', 'Not handover', 'Last payment against PN'].map(statusOption => (
-                                                                        <button
-                                                                            key={statusOption} onClick={() => handleStatusQuickChange(project.id, statusOption)}
-                                                                            className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${project.status === statusOption ? 'text-solar-primary font-bold bg-sky-50/50' : 'text-solar-textDark'}`}
-                                                                        >
-                                                                            <span className={`w-1.5 h-1.5 rounded-full ${statusOption === 'Completed' ? 'bg-emerald-500' : statusOption === 'Not handover' ? 'bg-sky-500' : 'bg-purple-500'}`}></span>{statusOption}
-                                                                        </button>
+                                                                        <button key={statusOption} onClick={() => handleStatusQuickChange(project.id, statusOption)} className="w-full text-left px-4 py-2.5 text-[11px] text-solar-textDark hover:bg-slate-50 transition-colors flex items-center gap-2"><span className={`w-1.5 h-1.5 rounded-full ${statusOption === 'Completed' ? 'bg-emerald-500' : statusOption === 'Not handover' ? 'bg-sky-500' : 'bg-purple-500'}`}></span>{statusOption}</button>
                                                                     ))}
                                                                 </div>
                                                             )}
                                                         </td>
                                                         <td className="px-5 py-3.5 text-right">
                                                             {isAdmin ? (
-                                                                <div className="flex justify-end gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button onClick={() => openEditModal(project)} className="p-1.5 bg-slate-100 hover:bg-sky-50 hover:text-solar-primary rounded text-solar-textMuted transition-colors border border-slate-200"><i className="fa-solid fa-pen text-[10px]"></i></button>
-                                                                    <button onClick={() => handleDelete(project.id)} className="p-1.5 bg-red-50 hover:bg-red-500 hover:text-white rounded text-red-600 transition-colors border border-red-100"><i className="fa-solid fa-trash-can text-[10px]"></i></button>
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button onClick={() => openEditModal(project)} className="p-1.5 bg-slate-500/5 hover:bg-sky-500/10 rounded text-solar-textMuted border border-transparent"><i className="fa-solid fa-pen text-[10px]"></i></button>
+                                                                    <button onClick={() => handleDelete(project.id)} className="p-1.5 bg-red-500/5 hover:bg-red-500/20 text-red-500 rounded border border-transparent"><i className="fa-solid fa-trash-can text-[10px]"></i></button>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex justify-end text-slate-300 text-xs px-2 select-none"><i className="fa-solid fa-lock opacity-35"></i></div>
@@ -896,22 +915,18 @@
                     {/* Security Authentication Prompt */}
                     {isAuthModalOpen && (
                         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                            <div className="bg-white border border-solar-border rounded-xl w-full max-w-sm shadow-2xl p-6">
+                            <div className="bg-white border border-solar-border rounded-xl w-full max-w-sm shadow-2xl p-6 text-solar-textDark">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="bg-sky-50 text-solar-primary p-2.5 rounded-xl border border-sky-100"><i className="fa-solid fa-shield-halved text-lg"></i></div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-solar-textDark">Admin Authorization</h3>
+                                        <h3 className="text-sm font-bold">Admin Authorization</h3>
                                         <p className="text-[11px] text-solar-textMuted">Unlock administrative pipeline modification engines</p>
                                     </div>
                                 </div>
                                 <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Platform Secret Key</label>
-                                        <input 
-                                            type="password" placeholder="••••••••" value={enteredPassword}
-                                            onChange={(e) => { setEnteredPassword(e.target.value); setPasswordError(false); }}
-                                            className={`w-full bg-solar-bgMain border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none tracking-widest ${passwordError ? 'border-red-500' : 'border-solar-border'}`} autoFocus
-                                        />
+                                        <input type="password" placeholder="••••••••" value={enteredPassword} onChange={(e) => { setEnteredPassword(e.target.value); setPasswordError(false); }} className={`w-full bg-solar-bgMain border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none tracking-widest ${passwordError ? 'border-red-500' : 'border-solar-border'}`} autoFocus />
                                         {passwordError && <p className="text-[10px] text-red-600 font-semibold mt-1">Incorrect credentials. Authentication failed.</p>}
                                     </div>
                                     <div className="flex justify-end gap-2 pt-2">
@@ -925,16 +940,15 @@
 
                     {/* Dynamic Add / Edit Dialog */}
                     {isModalOpen && isAdmin && (
-                        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 text-solar-textDark">
                             <div className="bg-white border border-solar-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in my-auto overflow-hidden">
                                 <div className="px-6 py-4 border-b border-solar-border flex justify-between items-center bg-slate-50 shrink-0">
-                                    <h3 className="text-sm font-bold text-solar-textDark flex items-center gap-2">
+                                    <h3 className="text-sm font-bold flex items-center gap-2">
                                         <div className="bg-[#0081C9] w-7 h-7 rounded-[8px] flex items-center justify-center text-white shrink-0 shadow-sm"><i className="fa-solid fa-solar-panel text-xs"></i></div>
                                         <span className="font-black tracking-tight text-[#0A1128] ml-1">AFAQ</span><span className="font-normal text-[#475569] -ml-1">Renewables</span>
                                     </h3>
                                     <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-solar-textDark focus:outline-none"><i className="fa-solid fa-xmark text-lg"></i></button>
                                 </div>
-
                                 <form onSubmit={handleFormSubmit} className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4 sm:gap-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
@@ -954,7 +968,6 @@
                                             </select>
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-1 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Customer / Client Name *</label>
@@ -965,7 +978,6 @@
                                             <input type="text" placeholder="e.g. Supply of PV panels" required value={currentProject.desc} onChange={(e) => setCurrentProject(prev => ({ ...prev, desc: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-solar-border pt-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Order Value (SAR)</label>
@@ -980,7 +992,6 @@
                                             <input type="number" step="any" value={currentProject.collection} onChange={(e) => setCurrentProject(prev => ({ ...prev, collection: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-solar-border pt-4">
                                         <div>
                                             <label className="block text-[10px] font-bold uppercase tracking-wider text-solar-textMuted mb-1.5">Net Joint Profit (SAR)</label>
@@ -995,7 +1006,6 @@
                                             <input type="number" step="any" value={currentProject.jubileeProfit} onChange={(e) => setCurrentProject(prev => ({ ...prev, jubileeProfit: e.target.value }))} className="w-full bg-solar-bgMain border border-solar-border rounded-lg px-3 py-2 text-xs text-solar-textDark focus:outline-none" />
                                         </div>
                                     </div>
-
                                     <div className="bg-slate-50 p-3 rounded-lg border border-solar-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
                                         <div>
                                             <p className="text-[10px] font-bold text-solar-textDark uppercase">Automated JV Profit Splitting Tool</p>
@@ -1006,7 +1016,6 @@
                                             <button type="button" onClick={() => runAutoSplit('split50')} className="flex-1 sm:flex-initial text-center px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-solar-accentGreen text-[10px] font-bold hover:bg-solar-accentGreen hover:text-white transition-colors">50/50 Split</button>
                                         </div>
                                     </div>
-
                                     <div className="border-t border-solar-border pt-4 flex justify-end gap-3 shrink-0">
                                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-100 text-solar-textMuted rounded-lg text-xs font-semibold">Cancel</button>
                                         <button type="submit" className="px-5 py-2 bg-solar-primary text-white rounded-lg text-xs font-bold shadow-sm">Save Changes</button>
